@@ -1,155 +1,99 @@
-# mini-sql-node-massive
+# sql-massive-node
 
-## Setup
+Today we're going to make our first full CRUD back-end.
 
-Run `npm install` to install the pre-requisites
+I'll be referring to this mini project through these instructions : https://github.com/DevMountain/mini-sql-node-massive
 
-Look over the index.js file to get familiar with your starting point.
+## Setup your server
 
-## Get your database started
+Get your basic server working.  Follow the steps from the mini-project to setup a server :
 
-Make sure postgres is running on your computer.
+* Require and setup express and get it listening on a port
+* Require MassiveJS and Connect to a database (make a new one, or use one you've already made).
+* Add db to our express app, put the massive instance on there and export our app (see the mini-project)
 
-## Install MassiveJS
+## Understand your data
 
-Run `npm install --save massive`
+We are going to be working with a single table, products.  It's schema will look something like this:
 
-Require massive at the top of your index file.
+* ID : Primary key number
+* Name : string
+* Description: string
+* Price: number
+* Imageurl : string
 
-`var massive = require('massive');`
+## Create your .sql files
 
-## Setup our table
+* Create a folder called db and place 5 files in there:
+  * create_product
+  * read_products
+  * read_product
+  * update_product
+  * delete_product
+  
+* Create a working SQL query for each one.  You can use pgAdmin to test your queries against the database.
 
-Make a new database in postgres called sandbox
+__create_product__
 
-Add a new table to that database ( [pgAdmin tutorial on how to do both of these](https://www.youtube.com/watch?v=1wvDVBjNDys) ) :
+This query will need to take the 4 parameters defined in the schema and insert a record into the database.
 
-```
-CREATE TABLE airplanes (
-  planeid SERIAL PRIMARY KEY NOT NULL, -- The primary key
-  planetype varchar(40) NOT NULL, -- The IP of the host
-  passengercount integer NOT NULL -- The name of the host
-);
-```
+__read_products__
 
+This query will get all products in the table and return only the name, price, and image url
 
-## Connect with Massive to our database
+__read_product__
 
-We need to get a copy of massive ot use.  We need : `connectionString > connection > db`
+This query will take in an id and return all data for that product
 
-Add a connection string under your call to require massive.  Change the part that says jeremyrobertson to have your user name.  (If you included password it will look like `username:password@localhost/sandbox`
+__update_product__
 
-__connectionString__
-```
-var massive = require('massive');
-var connectionString = "postgres://jeremyrobertson@localhost/sandbox";
-```
+This query will take in an id and a new description.  Find the product with the id and update it's description with the new description.
 
-Use our connection string to get a copy/instance of massive to use.  Then add it to our app as a variable called db.
+__delete_product__
 
-__connection__
-```
-var massiveInstance = massive.connectSync({connectionString : connectionString})
-
-app.set('db', massiveInstance);
-```
-
-Next we can get our db back out of the app
-
-__db__
-```
-var db = app.get('db');
-```
+This query will take in an id.  Find and delete the product with the id.
 
 
-## Add a new plane to the database
+## Run your queries in your controller
 
-Now that we have our db we can use it to add a new plane:
+* Create a productsCtrl.js
+    * Export an object with 5 functions
+        * Create, GetOne, GetAll, Update, Delete
+    * At the top of the controller (outside the object), get the db object off of our express app (see mini-project)
+    * Inside of Create use the create_product query
+    * Inside of GetAll use the read_products query
+    * Inside of GetOne, use the read_product query
+    * Inside of Update, use the update_product query
+    * Inside of Delete, use the delete_product query
+    
 
-```
-db.new_plane(function(err, planes){
-    console.log(err, "plane added")
-});
-```
+## Create endpoints
 
-This works by looking in the `/db` folder in our app fore a file called `new_plane.sql`
+* Create some endpoints on express.  Create one for each query type.
 
-We've added a plane, comment those 3 lines of code out so we don't add duplicates.
+__Sample Urls__
 
+`GET  /api/products`
+`GET  /api/product/:productId`
+`PUT  /api/product/:productId?desc=....`
+`POST /api/product`
+`DELETE /api/product/:productId`
 
-## Get all planes
+## Wire your endpoints up to your controller
 
-Do the same thing to get all planes using the get_planes file
+* Get any information you need off of the query parameters, query, or body and pass them into your controller
+* You will need to add parameters in your controller functions to receive these values.
 
-```
-db.get_planes(function(err, planes){
-    console.log(err, planes)
-})
-```
+## Test
 
-## Queries in different files
+* You should have a working crud app.  Use postman to insert a few records, modify them, query them, and delete them to make sure it's all working.
 
-To use our db in different files we need to do 2 things:
+## Black Diamond
 
-* export the app made by express
-* import it and use it in our other file
-* call our controller
-
-__export our app__
-```
-//Replace
-var app = express();
-
-//With
-var app = module.exports = express();
-```
-
-This makes it so index.js exports our app.
-
-
-__ import it and use it in another file__
-
-Create a controller.js and put this code inside.
-
-```
-var app = require('./index');
-
-module.exports = {
-    getPlanes: function(){
-        var db = app.get('db');
-
-        db.get_planes(function(err, planes){
-            console.log(err, planes);
-        })
-    }
-}
-```
-
-__call our controller__
-
-Comment out call calls to db in your index.js and replace them with a call to the controller and the get planes function.
-
-```
-var controller = require('./controller.js');
-
-controller.getPlanes();
-```
-
-## Parameterize our Query
-
-In get_planes.sql uncomment out `where passengercount > $1` by removing the two `--` in front of it.
-
-The $1 acts as a place holder for the 'first' parameter passed in.
-
-To pass that in change the query in controller.js to take parameters before the function.
-
-```
-db.get_planes([25], function(err, planes){
-    console.log(err, planes);
-})
-```        
-
-We are now getting all planes with a passenger count greater than 25.
+* Create an angular front end to interact with your app.
+* Use express static to serve up your angular files from a public folder
+* Create a single view that can insert, read, update, and delete products.
+* Create a 2nd page that just reads the products and displays them in a more pretty way (like Jane.com or amazon).
 
 
 ## Copyright
